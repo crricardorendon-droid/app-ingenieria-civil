@@ -308,7 +308,7 @@ function NuevaFactura({ clientes, onCrearFactura }) {
         </thead>
         <tbody>
           {items.map((it, idx) => (
-            <tr key={idx} style={{ borderTop: "1px solid "#eee" }}>
+            <tr key={idx} style={{ borderTop: "1px solid #eee" }}>
               <td>
                 <input
                   placeholder="Tarea / rubro"
