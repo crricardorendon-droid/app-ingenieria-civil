@@ -10,23 +10,22 @@ export default function AppIngenieriaCivil() {
   const [cliEmpresa, setCliEmpresa] = useState("");
   const [cliContacto, setCliContacto] = useState("");
 
-  // -------------------------------
-  // Cargar clientes desde el backend
-  // -------------------------------
+  // Carga de clientes
   const cargarClientes = async () => {
     try {
-      const url = `${API_BASE}?token=${TOKEN}&type=clientes`;
+      const url = `${API_BASE}?token=${encodeURIComponent(
+        TOKEN
+      )}&type=clientes`;
       const r = await fetch(url);
       const txt = await r.text();
       console.log("[cargarClientes] raw:", txt);
 
       if (txt.startsWith("<!DOCTYPE") || txt.startsWith("<html")) {
         alert(
-          "El backend devolvió una página HTML (login). En Apps Script poné 'Cualquiera' en permisos y actualizá el deployment."
+          "El backend devolvió una página HTML (login). En Apps Script: 'Quién tiene acceso: CUALQUIERA'."
         );
         return;
       }
-
       const data = JSON.parse(txt);
       if (data.ok) {
         setClientes(data.clientes || []);
@@ -40,14 +39,10 @@ export default function AppIngenieriaCivil() {
   };
 
   useEffect(() => {
-    if (vista === "clientes") {
-      cargarClientes();
-    }
+    if (vista === "clientes") cargarClientes();
   }, [vista]);
 
-  // -------------------------------
-  // Crear cliente
-  // -------------------------------
+  // Crear cliente (GET para evitar doPost/CORS)
   const crearCliente = async () => {
     const nombre = (cliNombre || "").trim();
     const empresa = (cliEmpresa || "").trim();
@@ -58,16 +53,17 @@ export default function AppIngenieriaCivil() {
       return;
     }
 
-    const url = `${API_BASE}?token=${TOKEN}&type=crear_cliente`;
+    const url =
+      `${API_BASE}?token=${encodeURIComponent(TOKEN)}` +
+      `&type=crear_cliente` +
+      `&nombre=${encodeURIComponent(nombre)}` +
+      `&empresa=${encodeURIComponent(empresa)}` +
+      `&contacto=${encodeURIComponent(contacto)}`;
+
     console.log("[crearCliente] URL:", url);
 
     try {
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, empresa, contacto }),
-      });
-
+      const r = await fetch(url); // GET
       const txt = await r.text();
       console.log("[crearCliente] raw:", txt);
 
@@ -77,24 +73,22 @@ export default function AppIngenieriaCivil() {
         );
         return;
       }
-
       let data;
       try {
         data = JSON.parse(txt);
       } catch (e) {
-        alert("Respuesta no válida del servidor. Revisá la consola.");
+        alert("Respuesta no válida del servidor. Revisá consola.");
         return;
       }
-
       if (!data.ok) {
         alert("No se pudo crear el cliente. " + (data.error || ""));
         return;
       }
 
-      // refrescamos la lista desde el servidor
+      // refrescamos lista
       await cargarClientes();
 
-      // limpiamos inputs
+      // limpiar inputs
       setCliNombre("");
       setCliEmpresa("");
       setCliContacto("");
@@ -104,17 +98,14 @@ export default function AppIngenieriaCivil() {
     }
   };
 
-  // -------------------------------
-  // Render
-  // -------------------------------
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>Servicios de Ingeniería Civil S.R.L.</h1>
 
-      <div style={{ marginBottom: "20px" }}>
-        <button onClick={() => setVista("dashboard")}>Dashboard</button>
-        <button onClick={() => setVista("clientes")}>Clientes</button>
-        <button onClick={() => setVista("facturacion")}>Facturación</button>
+      <div style={{ marginBottom: 20 }}>
+        <button onClick={() => setVista("dashboard")}>Dashboard</button>{" "}
+        <button onClick={() => setVista("clientes")}>Clientes</button>{" "}
+        <button onClick={() => setVista("facturacion")}>Facturación</button>{" "}
         <button onClick={() => setVista("cobros")}>Cobros</button>
       </div>
 
@@ -123,7 +114,7 @@ export default function AppIngenieriaCivil() {
       {vista === "clientes" && (
         <div>
           <h2>Clientes</h2>
-          <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
             <input
               placeholder="Nombre"
               value={cliNombre}
@@ -142,7 +133,7 @@ export default function AppIngenieriaCivil() {
             <button onClick={crearCliente}>+ Agregar</button>
           </div>
 
-          <table width="100%" border="0" cellPadding="4">
+          <table width="100%" cellPadding="4">
             <thead style={{ background: "#f2f2f2" }}>
               <tr>
                 <th align="left">Nombre</th>
