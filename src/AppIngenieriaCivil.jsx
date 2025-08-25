@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-/* ===== Utilidades ===== */
+/* ========= Utils ========= */
 const currency = (n) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -11,7 +11,7 @@ const currency = (n) =>
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-/* ===== Cliente API (Apps Script / Google Sheets) ===== */
+/* ========= API (Apps Script / Google Sheets) ========= */
 const API = (() => {
   const BASE = window.__APPSCRIPT_BASE__ || "";
   const TOKEN = window.__APPSCRIPT_TOKEN__ || "GRETA";
@@ -41,7 +41,7 @@ const API = (() => {
   };
 })();
 
-/* ===== App ===== */
+/* ========= APP ========= */
 export default function AppIngenieriaCivil() {
   const initial = {
     empresa: {
@@ -58,13 +58,12 @@ export default function AppIngenieriaCivil() {
   const [data, setData] = useState(initial);
   const [tab, setTab] = useState("dashboard");
 
-  /* ---- Persistencia local: cargar al iniciar ---- */
+  /* ---- Cargar desde localStorage al iniciar ---- */
   useEffect(() => {
     try {
       const raw = localStorage.getItem("iciv-data");
       if (raw) {
         const saved = JSON.parse(raw);
-        // merge básico para no perder estructura nueva si actualizamos
         setData((prev) => ({
           ...prev,
           ...saved,
@@ -74,14 +73,14 @@ export default function AppIngenieriaCivil() {
     } catch {}
   }, []);
 
-  /* ---- Persistencia local: guardar cada cambio ---- */
+  /* ---- Guardar en localStorage cada cambio ---- */
   useEffect(() => {
     try {
       localStorage.setItem("iciv-data", JSON.stringify(data));
     } catch {}
   }, [data]);
 
-  /* ---- Cargar clientes desde Google Sheets (si la API responde) ---- */
+  /* ---- Traer clientes del Sheet y fusionar con los locales (sin duplicados) ---- */
   useEffect(() => {
     (async () => {
       if (!API.ok()) return;
@@ -89,7 +88,6 @@ export default function AppIngenieriaCivil() {
         const res = await API.listarClientes();
         console.log("API listarClientes →", res);
         if (res?.ok && Array.isArray(res.data)) {
-          // Si hay datos en Sheets, los fusionamos con los locales
           const externos = res.data.map((r) => ({
             id: r.ID || uid(),
             nombre: r.Nombre || "",
@@ -98,14 +96,22 @@ export default function AppIngenieriaCivil() {
             telefono: r.Telefono || "",
             direccion: r.Empresa || "",
           }));
+
           setData((prev) => {
-            // evitamos duplicar por nombre + contacto
-            const key = (c) => `${c.nombre}::${c.email || c.telefono || ""}`.toLowerCase();
-            const existentes = new Map(prev.clientes.map((c) => [key(c), c]));
-            externos.forEach((c) => {
-              if (!existentes.has(key(c))) existentes.set(key(c), c);
-            });
-            return { ...prev, clientes: Array.from(existinges.values ? existentes.values() : existentes) };
+            // clave para comparar clientes (nombre + email/telefono)
+            const key = (c) =>
+              `${(c.nombre || "").trim().toLowerCase()}::${(
+                c.email || c.telefono || ""
+              )
+                .trim()
+                .toLowerCase()}`;
+
+            // arranco con los que ya tengo localmente
+            const merged = new Map(prev.clientes.map((c) => [key(c), c]));
+            // agrego/actualizo los que vienen de Sheets
+            externos.forEach((c) => merged.set(key(c), c));
+
+            return { ...prev, clientes: Array.from(merged.values()) };
           });
         }
       } catch (err) {
@@ -124,13 +130,13 @@ export default function AppIngenieriaCivil() {
       .filter((f) => f.clienteId === clienteId)
       .reduce((acc, f) => acc + (Number(f.saldo) || 0), 0);
 
-  /* ===== Acciones ===== */
+  /* ========= Acciones ========= */
 
-  // >>> Crear Cliente (con persistencia local + llamada a Apps Script + logs/alertas)
+  // Crear cliente (persistencia local + API + logs/alertas)
   const crearCliente = async (cliente) => {
     const nuevo = { id: uid(), ...cliente };
 
-    // 1) actualizamos memoria y guardamos en localStorage (se hace también por el useEffect)
+    // 1) actualizo memoria + localStorage
     setData((prev) => {
       const next = { ...prev, clientes: [...prev.clientes, nuevo] };
       try {
@@ -139,7 +145,7 @@ export default function AppIngenieriaCivil() {
       return next;
     });
 
-    // 2) intentamos escribir en Apps Script
+    // 2) intento escribir en Apps Script
     if (API.ok()) {
       try {
         const res = await API.crearCliente({
@@ -148,10 +154,15 @@ export default function AppIngenieriaCivil() {
           Contacto: cliente.email || cliente.telefono || "",
         });
         console.log("API crearCliente →", res);
-        if (!res?.ok) alert("No se pudo guardar en el Sheet: " + (res?.error || "desconocido"));
+        if (!res?.ok)
+          alert(
+            "No se pudo guardar en el Sheet: " + (res?.error || "desconocido")
+          );
       } catch (e) {
         console.error("Error crearCliente:", e);
-        alert("Error llamando a Apps Script (revisá URL/permiso): " + e.message);
+        alert(
+          "Error llamando a Apps Script (revisá URL/permiso): " + e.message
+        );
       }
     } else {
       alert("API BASE vacía. Revisá window.__APPSCRIPT_BASE__ en index.html");
@@ -170,10 +181,14 @@ export default function AppIngenieriaCivil() {
       saldo: Number(total),
       estado: "Pendiente",
     };
+
     setData((prev) => {
       const next = {
         ...prev,
-        consecutivos: { ...prev.consecutivos, factura: prev.consecutivos.factura + 1 },
+        consecutivos: {
+          ...prev.consecutivos,
+          factura: prev.consecutivos.factura + 1,
+        },
         facturas: [f, ...prev.facturas],
       };
       try {
@@ -195,7 +210,11 @@ export default function AppIngenieriaCivil() {
           ClienteID: clienteId,
         });
         console.log("API crearFactura →", res);
-        if (!res?.ok) alert("No se pudo guardar FACTURA en el Sheet: " + (res?.error || "desconocido"));
+        if (!res?.ok)
+          alert(
+            "No se pudo guardar FACTURA en el Sheet: " +
+              (res?.error || "desconocido")
+          );
       } catch (e) {
         console.error("Error crearFactura:", e);
         alert("Error llamando a Apps Script (factura): " + e.message);
@@ -218,7 +237,10 @@ export default function AppIngenieriaCivil() {
     setData((prev) => {
       const next = {
         ...prev,
-        consecutivos: { ...prev.consecutivos, recibo: prev.consecutivos.recibo + 1 },
+        consecutivos: {
+          ...prev.consecutivos,
+          recibo: prev.consecutivos.recibo + 1,
+        },
         facturas: nuevasFacturas,
         recibos: [nuevo, ...prev.recibos],
       };
@@ -244,7 +266,11 @@ export default function AppIngenieriaCivil() {
           Observaciones: cobro.observaciones || "",
         });
         console.log("API registrarCobro →", res);
-        if (!res?.ok) alert("No se pudo guardar RECIBO en el Sheet: " + (res?.error || "desconocido"));
+        if (!res?.ok)
+          alert(
+            "No se pudo guardar RECIBO en el Sheet: " +
+              (res?.error || "desconocido")
+          );
       } catch (e) {
         console.error("Error registrarCobro:", e);
         alert("Error llamando a Apps Script (recibo): " + e.message);
@@ -252,7 +278,7 @@ export default function AppIngenieriaCivil() {
     }
   };
 
-  /* ===== UI ===== */
+  /* ========= UI ========= */
   return (
     <div style={{ padding: 20, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
       <h1>{data.empresa.nombre}</h1>
@@ -368,5 +394,6 @@ export default function AppIngenieriaCivil() {
     </div>
   );
 }
+
 
 
