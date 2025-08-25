@@ -1,4 +1,3 @@
-// src/AppIngenieriaCivil.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
 /* ================== Helpers ================== */
@@ -44,7 +43,6 @@ const API = {
     fetch(BASE, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      // 👇 IMPORTANTE: mandamos items tal cual (con numero incluido)
       body: JSON.stringify({ op: "registrar_cobro", token: TOKEN, data }),
     }).then(j),
 };
@@ -187,6 +185,8 @@ function NuevaFactura({ clientes, onCrearFactura }) {
     { descripcion: "", cantidad: 1, precio: 0 },
   ]);
 
+  const [saving, setSaving] = useState(false); // para “Guardando…”
+
   const subt = useMemo(
     () =>
       items.reduce(
@@ -199,6 +199,46 @@ function NuevaFactura({ clientes, onCrearFactura }) {
   const total = subt + ivaMonto;
 
   const cli = clientes.find((c) => c.ID === data.clienteId);
+
+  const handleSave = async () => {
+    if (!data.clienteId) {
+      alert("Elegí un cliente");
+      return;
+    }
+
+    const payload = {
+      ClienteID: data.clienteId,
+      Fecha: data.fecha,
+      Numero: data.numero || "",
+      Nombre: cli?.Nombre || "",
+      Concepto: data.concepto,
+      Subtotal: subt,
+      IVA: ivaMonto,
+      Total: total,
+      Items_JSON: JSON.stringify(items),
+    };
+
+    setSaving(true);
+    try {
+      const ok = await onCrearFactura(payload); // el padre devuelve true/false
+      if (ok) {
+        // limpiar formulario
+        setData({
+          clienteId: "",
+          fecha: todayISO(),
+          concepto: "Servicios de ingeniería",
+          iva: 21,
+          numero: "",
+        });
+        setItems([{ descripcion: "", cantidad: 1, precio: 0 }]);
+        alert("Factura guardada.");
+      } else {
+        alert("No se pudo guardar la factura.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
@@ -268,7 +308,7 @@ function NuevaFactura({ clientes, onCrearFactura }) {
         </thead>
         <tbody>
           {items.map((it, idx) => (
-            <tr key={idx} style={{ borderTop: "1px solid #eee" }}>
+            <tr key={idx} style={{ borderTop: "1px solid "#eee" }}>
               <td>
                 <input
                   placeholder="Tarea / rubro"
@@ -311,11 +351,7 @@ function NuevaFactura({ clientes, onCrearFactura }) {
                 {fmtMoney(Number(it.cantidad || 0) * Number(it.precio || 0))}
               </td>
               <td align="center" width={50}>
-                <button
-                  onClick={() =>
-                    setItems(items.filter((_, i) => i !== idx))
-                  }
-                >
+                <button onClick={() => setItems(items.filter((_, i) => i !== idx))}>
                   ×
                 </button>
               </td>
@@ -357,25 +393,11 @@ function NuevaFactura({ clientes, onCrearFactura }) {
 
       <div style={{ marginTop: 18 }}>
         <button
-          disabled={!data.clienteId || total <= 0}
-          onClick={() => {
-            const payload = {
-              ClienteID: data.clienteId,
-              Fecha: data.fecha,
-              Numero: data.numero || "",
-              Nombre: cli?.Nombre || "",
-              Concepto: data.concepto,
-              Subtotal: subt,
-              IVA: ivaMonto,
-              Total: total,
-              // el Apps Script guarda Descripciones + Items_JSON
-              Items_JSON: JSON.stringify(items),
-            };
-            onCrearFactura(payload);
-          }}
-          style={{ padding: "10px 14px" }}
+          disabled={saving}
+          onClick={handleSave}
+          style={{ padding: "10px 14px", opacity: saving ? 0.7 : 1 }}
         >
-          Guardar factura
+          {saving ? "Guardando…" : "Guardar factura"}
         </button>
       </div>
     </div>
@@ -385,18 +407,13 @@ function NuevaFactura({ clientes, onCrearFactura }) {
 /* ============ Cuenta Corriente / Cobros ============ */
 
 function ClienteDetalle({ cliente, facturas, onCobrar }) {
-  // facturas: [{id, numero, fecha, total, saldo, cobrable, ...}]
   const [seleccion, setSeleccion] = useState({});
   const [metodo, setMetodo] = useState("Transferencia");
   const [fecha, setFecha] = useState(todayISO());
   const [obs, setObs] = useState("");
 
   const totalAplicado = useMemo(
-    () =>
-      Object.values(seleccion).reduce(
-        (acc, v) => acc + Number(v || 0),
-        0
-      ),
+    () => Object.values(seleccion).reduce((acc, v) => acc + Number(v || 0), 0),
     [seleccion]
   );
 
@@ -488,16 +505,13 @@ function ClienteDetalle({ cliente, facturas, onCobrar }) {
           <button
             disabled={totalAplicado <= 0}
             onClick={() => {
-              // 👇 ITEMS CON NÚMERO
               const items = facturas
                 .filter(
-                  (f) =>
-                    seleccion[f.id] !== undefined &&
-                    Number(seleccion[f.id]) > 0
+                  (f) => seleccion[f.id] !== undefined && Number(seleccion[f.id]) > 0
                 )
                 .map((f) => ({
                   facturaId: f.id,
-                  numero: f.numero,          // 👈 incluimos el número
+                  numero: f.numero,        // incluimos número
                   aplicado: Number(seleccion[f.id] || 0),
                 }));
 
@@ -522,11 +536,13 @@ function ClienteDetalle({ cliente, facturas, onCobrar }) {
 export default function AppIngenieriaCivil() {
   const [vista, setVista] = useState("dashboard");
   const [clientes, setClientes] = useState([]);
-  const [facturas, setFacturas] = useState([]); // estado local de facturas creadas desde esta app
+  const [facturas, setFacturas] = useState([]);    // facturas generadas en esta sesión
   const [vistaClienteId, setVistaClienteId] = useState(null);
 
   useEffect(() => {
-    // carga inicial de clientes
+    // “calentar” Apps Script (reduce la primera latencia)
+    API.ping().catch(() => {});
+
     API.clientes()
       .then((r) => setClientes(r?.data || []))
       .catch(() => setClientes([]));
@@ -536,8 +552,6 @@ export default function AppIngenieriaCivil() {
     clientes.find((c) => c.ID === vistaClienteId) || null;
 
   const facturasCliente = useMemo(() => {
-    // Acá podrías poblar desde tu backend (si tenés endpoint),
-    // por ahora mostramos las facturas generadas en esta sesión.
     return facturas
       .filter((f) => f.clienteId === vistaClienteId && !f.cobrada)
       .map((f) => ({
@@ -583,13 +597,9 @@ export default function AppIngenieriaCivil() {
         <NuevaFactura
           clientes={clientes}
           onCrearFactura={async (payload) => {
-            // guardamos en backend
             const r = await API.crearFactura(payload);
             if (!r.ok) {
-              alert(
-                "No se pudo guardar FACTURA: " + (r.error || "Error desconocido")
-              );
-              return;
+              return false; // informa al hijo que no limpie
             }
             // guardamos en estado local para poder cobrarla
             const id = crypto.randomUUID();
@@ -605,7 +615,7 @@ export default function AppIngenieriaCivil() {
                 cobrada: false,
               },
             ]);
-            alert("Factura guardada.");
+            return true; // OK -> el hijo limpia
           }}
         />
       )}
@@ -630,25 +640,25 @@ export default function AppIngenieriaCivil() {
               Nombre: clienteActual?.Nombre || "",
               Monto: monto,
               Medio: metodo,
-              // 👇 MUY IMPORTANTE: items CON numero
-              items,
+              items,                         // incluye numero
               Observaciones: observaciones,
             };
 
             const r = await API.registrarCobro(data);
             if (!r.ok) {
-              alert(
-                "No se pudo registrar el cobro: " + (r.error || "Error desconocido")
-              );
+              alert("No se pudo registrar el cobro");
               return;
             }
 
-            // Descontamos saldos localmente
+            // actualizar saldos locales
             setFacturas((prev) =>
               prev.map((f) => {
                 const it = items.find((i) => i.facturaId === f.id);
                 if (!it) return f;
-                const nuevoSaldo = Math.max(0, Number(f.saldo || f.total) - Number(it.aplicado || 0));
+                const nuevoSaldo = Math.max(
+                  0,
+                  Number(f.saldo || f.total) - Number(it.aplicado || 0)
+                );
                 return {
                   ...f,
                   saldo: nuevoSaldo,
