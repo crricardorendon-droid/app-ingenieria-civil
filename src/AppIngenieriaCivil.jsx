@@ -8,8 +8,7 @@ const currency = (n) =>
   }).format(Number(n || 0));
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-const uid = () =>
-  Math.random().toString(36).slice(2) + Date.now().toString(36);
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 // --- Cliente API (Apps Script / Google Sheets) ---
 const API = (() => {
@@ -19,8 +18,7 @@ const API = (() => {
   const ok = () => !!BASE;
   return {
     ok,
-    listarClientes: () =>
-      fetch(`${BASE}?type=clientes&token=${TOKEN}`).then(j),
+    listarClientes: () => fetch(`${BASE}?type=clientes&token=${TOKEN}`).then(j),
     crearCliente: (data) =>
       fetch(BASE, {
         method: "POST",
@@ -54,8 +52,11 @@ export default function AppIngenieriaCivil() {
     facturas: [],
     recibos: [],
   };
+
   const [data, setData] = useState(initial);
   const [tab, setTab] = useState("dashboard");
+
+  // precarga para cobros demo
   const [preCobro, setPreCobro] = useState({
     clienteId: "",
     seleccion: [],
@@ -131,7 +132,10 @@ export default function AppIngenieriaCivil() {
     };
     setData((prev) => ({
       ...prev,
-      consecutivos: { ...prev.consecutivos, factura: prev.consecutivos.factura + 1 },
+      consecutivos: {
+        ...prev.consecutivos,
+        factura: prev.consecutivos.factura + 1,
+      },
       facturas: [f, ...prev.facturas],
     }));
     if (API.ok()) {
@@ -167,7 +171,10 @@ export default function AppIngenieriaCivil() {
 
     setData((prev) => ({
       ...prev,
-      consecutivos: { ...prev.consecutivos, recibo: prev.consecutivos.recibo + 1 },
+      consecutivos: {
+        ...prev.consecutivos,
+        recibo: prev.consecutivos.recibo + 1,
+      },
       facturas: nuevas,
       recibos: [nuevo, ...prev.recibos],
     }));
@@ -191,27 +198,17 @@ export default function AppIngenieriaCivil() {
         console.error(e);
       }
     }
-
-    setPreCobro({
-      clienteId: cobro.clienteId,
-      seleccion: [],
-      aplicadoPorFactura: {},
-      montoRecibido: 0,
-      metodo: "Transferencia",
-      fecha: todayISO(),
-      observaciones: "",
-    });
-    setTab("recibos");
   };
 
   // --- UI ---
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
       <h1>{data.empresa.nombre}</h1>
+
       <div style={{ marginBottom: 20 }}>
-        <button onClick={() => setTab("dashboard")}>Dashboard</button>
-        <button onClick={() => setTab("clientes")}>Clientes</button>
-        <button onClick={() => setTab("facturacion")}>Facturación</button>
+        <button onClick={() => setTab("dashboard")}>Dashboard</button>{" "}
+        <button onClick={() => setTab("clientes")}>Clientes</button>{" "}
+        <button onClick={() => setTab("facturacion")}>Facturación</button>{" "}
         <button onClick={() => setTab("cobros")}>Cobros</button>
       </div>
 
@@ -220,12 +217,11 @@ export default function AppIngenieriaCivil() {
           <h2>Dashboard</h2>
           <p>Total clientes: {data.clientes.length}</p>
           <p>
-            Total facturas abiertas:{" "}
-            {data.facturas.filter((f) => f.saldo > 0).length}
+            Facturas abiertas: {data.facturas.filter((f) => f.saldo > 0).length}
           </p>
           <p>
             Saldo por cobrar:{" "}
-            {currency(data.facturas.reduce((a, f) => a + f.saldo, 0))}
+            {currency(data.facturas.reduce((a, f) => a + (f.saldo || 0), 0))}
           </p>
         </div>
       )}
@@ -248,7 +244,7 @@ export default function AppIngenieriaCivil() {
           <ul>
             {data.clientes.map((c) => (
               <li key={c.id}>
-                {c.nombre} - Saldo: {currency(saldoCliente(c.id))}
+                {c.nombre} — Saldo: {currency(saldoCliente(c.id))}
               </li>
             ))}
           </ul>
@@ -273,7 +269,7 @@ export default function AppIngenieriaCivil() {
           <ul>
             {data.facturas.map((f) => (
               <li key={f.id}>
-                {f.numero} - {f.concepto} - {currency(f.saldo)} ({f.estado})
+                {f.numero} — {f.concepto} — {currency(f.saldo)} ({f.estado})
               </li>
             ))}
           </ul>
@@ -290,12 +286,9 @@ export default function AppIngenieriaCivil() {
                 fecha: todayISO(),
                 metodo: "Transferencia",
                 monto: 5000,
-                items: [
-                  {
-                    facturaId: data.facturas[0]?.id,
-                    aplicado: 5000,
-                  },
-                ],
+                items: data.facturas[0]
+                  ? [{ facturaId: data.facturas[0].id, aplicado: 5000 }]
+                  : [],
                 observaciones: "Pago parcial",
               })
             }
@@ -305,4 +298,13 @@ export default function AppIngenieriaCivil() {
           <ul>
             {data.recibos.map((r) => (
               <li key={r.id}>
+                {r.numero} — {currency(r.monto)} — {r.metodo}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
