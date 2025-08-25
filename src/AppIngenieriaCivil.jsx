@@ -11,6 +11,17 @@ const currency = (n) =>
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+/* Calcular totales de factura */
+const calcTotals = (items = [], ivaPct = 0) => {
+  const subtotal = items.reduce(
+    (a, it) => a + Number(it.cantidad || 0) * Number(it.precio || 0),
+    0
+  );
+  const iva = (subtotal * Number(ivaPct || 0)) / 100;
+  const total = subtotal + iva;
+  return { subtotal, iva, total };
+};
+
 /* ===== API (Apps Script) ===== */
 const API = (() => {
   const BASE = window.__APPSCRIPT_BASE__ || "";
@@ -52,10 +63,10 @@ export default function AppIngenieriaCivil() {
   };
 
   const [data, setData] = useState(initial);
-  const [tab, setTab] = useState("dashboard"); // 'dashboard' | 'clientes' | 'facturacion' | 'cobros'
-  const [vistaClienteId, setVistaClienteId] = useState(null); // detalle de cliente (cuenta corriente)
+  const [tab, setTab] = useState("dashboard"); // dashboard | clientes | facturacion | cobros
+  const [vistaClienteId, setVistaClienteId] = useState(null);
 
-  /* ---- Cargar/guardar en localStorage ---- */
+  /* ---- Cargar/guardar local ---- */
   useEffect(() => {
     try {
       const raw = localStorage.getItem("iciv-data");
@@ -110,7 +121,7 @@ export default function AppIngenieriaCivil() {
       .filter((f) => f.clienteId === clienteId)
       .reduce((acc, f) => acc + (Number(f.saldo) || 0), 0);
 
-  /* ===== Acciones: Clientes / Facturas / Cobros ===== */
+  /* ===== Acciones ===== */
 
   const crearCliente = async (cliente) => {
     const nuevo = { id: uid(), ...cliente };
@@ -126,27 +137,35 @@ export default function AppIngenieriaCivil() {
           Empresa: cliente.direccion || "",
           Contacto: cliente.email || cliente.telefono || "",
         });
-        console.log("API crearCliente →", res);
-        if (!res?.ok) alert("No se pudo guardar en el Sheet: " + (res?.error || "desconocido"));
+        if (!res?.ok)
+          alert("No se pudo guardar en el Sheet: " + (res?.error || "desconocido"));
       } catch (e) {
         console.error("crearCliente:", e);
-        alert("Error llamando a Apps Script: " + e.message);
+        alert("Error Apps Script (cliente): " + e.message);
       }
     }
   };
 
-  const crearFactura = async ({ clienteId, fecha, concepto, total }) => {
+  const crearFactura = async ({ clienteId, fecha, concepto, items, ivaPct }) => {
     const numero = String(data.consecutivos.factura).padStart(8, "0");
+    const { subtotal, iva, total } = calcTotals(items, ivaPct);
+
     const f = {
       id: uid(),
       numero,
       clienteId,
       fecha,
       concepto,
-      total: Number(total),
-      saldo: Number(total),
+      items,         // guardamos ítems localmente
+      ivaPct: Number(ivaPct || 0),
+      subtotal,
+      iva,
+      total,
+      saldo: total,
       estado: "Pendiente",
     };
+
+    // local
     setData((prev) => {
       const next = {
         ...prev,
@@ -156,6 +175,8 @@ export default function AppIngenieriaCivil() {
       try { localStorage.setItem("iciv-data", JSON.stringify(next)); } catch {}
       return next;
     });
+
+    // remoto
     if (API.ok()) {
       try {
         const cli = clientesMap[clienteId];
@@ -163,16 +184,18 @@ export default function AppIngenieriaCivil() {
           Fecha: fecha,
           Nombre: cli?.nombre || "",
           Numero: numero,
-          Subtotal: f.total,
-          Total: f.total,
+          Subtotal: subtotal,
+          Total: total,
           Concepto: concepto,
           ClienteID: clienteId,
+          IVA: f.ivaPct,
+          Items_JSON: JSON.stringify(items || []),
         });
-        console.log("API crearFactura →", res);
-        if (!res?.ok) alert("No se pudo guardar FACTURA: " + (res?.error || "desconocido"));
+        if (!res?.ok)
+          alert("No se pudo guardar FACTURA: " + (res?.error || "desconocido"));
       } catch (e) {
         console.error("crearFactura:", e);
-        alert("Error llamando a Apps Script (factura): " + e.message);
+        alert("Error Apps Script (factura): " + e.message);
       }
     }
   };
@@ -181,7 +204,6 @@ export default function AppIngenieriaCivil() {
     const numero = `RC-${String(data.consecutivos.recibo).padStart(6, "0")}`;
     const nuevo = { id: uid(), numero, ...cobro };
 
-    // aplicar a facturas locales
     const nuevasFacturas = data.facturas.map((f) => {
       const it = cobro.items.find((i) => i.facturaId === f.id);
       if (!it) return f;
@@ -213,17 +235,16 @@ export default function AppIngenieriaCivil() {
           items: cobro.items.map((i) => ({ facturaId: i.facturaId, aplicado: i.aplicado })),
           Observaciones: cobro.observaciones || "",
         });
-        console.log("API registrarCobro →", res);
-        if (!res?.ok) alert("No se pudo guardar RECIBO: " + (res?.error || "desconocido"));
+        if (!res?.ok)
+          alert("No se pudo guardar RECIBO: " + (res?.error || "desconocido"));
       } catch (e) {
         console.error("registrarCobro:", e);
-        alert("Error llamando a Apps Script (recibo): " + e.message);
+        alert("Error Apps Script (recibo): " + e.message);
       }
     }
   };
 
   /* ===== Vistas ===== */
-
   return (
     <div style={{ padding: 20, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
       <h1>{data.empresa.nombre}</h1>
@@ -235,7 +256,7 @@ export default function AppIngenieriaCivil() {
         <button onClick={() => { setTab("cobros"); setVistaClienteId(null); }}>Cobros</button>
       </div>
 
-      {/* ===== Dashboard ===== */}
+      {/* Dashboard */}
       {tab === "dashboard" && (
         <div>
           <h2>Dashboard</h2>
@@ -245,7 +266,7 @@ export default function AppIngenieriaCivil() {
         </div>
       )}
 
-      {/* ===== Clientes (lista) o Detalle de cliente ===== */}
+      {/* Clientes */}
       {tab === "clientes" && (
         vistaClienteId ? (
           <ClienteDetalle
@@ -274,62 +295,64 @@ export default function AppIngenieriaCivil() {
         )
       )}
 
-      {/* ===== Facturación demo (se puede quitar luego) ===== */}
+      {/* Facturación */}
       {tab === "facturacion" && (
         <div>
           <h2>Nueva factura</h2>
-          <div style={{ marginBottom: 10 }}>
-            <button
-              onClick={() =>
-                data.clientes[0] && crearFactura({
-                  clienteId: data.clientes[0].id,
-                  fecha: todayISO(),
-                  concepto: "Servicio de ingeniería",
-                  total: 10000,
-                })
-              }
-              disabled={!data.clientes[0]}
-            >
-              + Factura demo
-            </button>
-          </div>
-          <ul>
-            {data.facturas.map((f) => (
-              <li key={f.id}>
-                {f.numero} — {f.concepto} — {currency(f.saldo)} ({f.estado})
-              </li>
-            ))}
-          </ul>
+
+          <FacturaForm
+            clientes={data.clientes}
+            onCrear={(payload) => crearFactura(payload)}
+          />
+
+          <h3 style={{ marginTop: 28 }}>Últimas facturas</h3>
+          <table style={{ borderCollapse: "collapse", width: "100%", maxWidth: 980 }}>
+            <thead>
+              <tr>
+                <th style={th}>N°</th>
+                <th style={th}>Fecha</th>
+                <th style={th}>Cliente</th>
+                <th style={th}>Concepto</th>
+                <th style={th}>Subtotal</th>
+                <th style={th}>IVA</th>
+                <th style={th}>Total</th>
+                <th style={th}>Saldo</th>
+                <th style={th}>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.facturas.map((f) => (
+                <tr key={f.id}>
+                  <td style={td}>{f.numero}</td>
+                  <td style={td}>{f.fecha}</td>
+                  <td style={td}>{clientesMap[f.clienteId]?.nombre || "-"}</td>
+                  <td style={td}>{f.concepto}</td>
+                  <td style={td}>{currency(f.subtotal ?? f.total)}</td>
+                  <td style={td}>{currency(f.iva ?? 0)} {f.ivaPct ? `(${f.ivaPct}%)` : ""}</td>
+                  <td style={td}>{currency(f.total)}</td>
+                  <td style={td}>{currency(f.saldo)}</td>
+                  <td style={td}>{f.estado}</td>
+                </tr>
+              ))}
+              {data.facturas.length === 0 && (
+                <tr><td style={td} colSpan={9}>Aún no hay facturas.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* ===== Cobros demo (puede quedar para test) ===== */}
+      {/* Cobros (demo listado) */}
       {tab === "cobros" && (
         <div>
-          <h2>Registrar cobro (demo)</h2>
-          <div style={{ marginBottom: 10 }}>
-            <button
-              onClick={() =>
-                data.clientes[0] && data.facturas[0] && registrarCobro({
-                  clienteId: data.clientes[0].id,
-                  fecha: todayISO(),
-                  metodo: "Transferencia",
-                  monto: 5000,
-                  items: [{ facturaId: data.facturas[0].id, aplicado: 5000 }],
-                  observaciones: "Pago parcial",
-                })
-              }
-              disabled={!data.clientes[0] || !data.facturas[0]}
-            >
-              + Cobro demo
-            </button>
-          </div>
+          <h2>Cobros</h2>
           <ul>
             {data.recibos.map((r) => (
               <li key={r.id}>
-                {r.numero} — {currency(r.monto)} — {r.metodo}
+                {r.numero} — {currency(r.monto)} — {r.metodo} — {r.fecha}
               </li>
             ))}
+            {data.recibos.length === 0 && <li>No hay cobros.</li>}
           </ul>
         </div>
       )}
@@ -408,7 +431,7 @@ function ClientesLista({ data, saldoCliente, onNuevo, onVer }) {
 }
 
 function ClienteDetalle({ cliente, facturas, onVolver, onCobrar }) {
-  const [seleccion, setSeleccion] = useState({}); // { facturaId: montoAplicado }
+  const [seleccion, setSeleccion] = useState({});
   const [metodo, setMetodo] = useState("Transferencia");
   const [fecha, setFecha] = useState(todayISO());
   const [obs, setObs] = useState("");
@@ -425,7 +448,6 @@ function ClienteDetalle({ cliente, facturas, onVolver, onCobrar }) {
   const totalAplicado = Object.values(seleccion).reduce((a, v) => a + Number(v || 0), 0);
 
   const toggle = (f) => {
-    // marcar/desmarcar y sugerir el saldo por defecto
     setSeleccion((prev) => {
       const next = { ...prev };
       if (next[f.id]) delete next[f.id];
@@ -531,9 +553,165 @@ function ClienteDetalle({ cliente, facturas, onVolver, onCobrar }) {
   );
 }
 
+/* ------ Formulario de Factura con ítems ------ */
+function FacturaForm({ clientes = [], onCrear }) {
+  const [clienteId, setClienteId] = useState("");
+  const [fecha, setFecha] = useState(todayISO());
+  const [concepto, setConcepto] = useState("Servicios de ingeniería");
+  const [ivaPct, setIvaPct] = useState(21);
+  const [items, setItems] = useState([
+    { id: uid(), descripcion: "Tarea / rubro", cantidad: 1, precio: 0 },
+  ]);
+
+  const totals = useMemo(() => calcTotals(items, ivaPct), [items, ivaPct]);
+
+  const addRow = () =>
+    setItems((prev) => [
+      ...prev,
+      { id: uid(), descripcion: "", cantidad: 1, precio: 0 },
+    ]);
+  const delRow = (id) => setItems((prev) => prev.filter((r) => r.id !== id));
+  const updateRow = (id, patch) =>
+    setItems((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+
+  const canSave =
+    clienteId &&
+    items.length > 0 &&
+    items.some((r) => Number(r.cantidad) > 0 && Number(r.precio) > 0);
+
+  return (
+    <div style={{ border: "1px solid #ddd", padding: 12, borderRadius: 6, maxWidth: 980 }}>
+      {clientes.length === 0 ? (
+        <p>Primero creá un cliente para poder facturar.</p>
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            <label>
+              Cliente<br />
+              <select value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
+                <option value="">-- elegir --</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Fecha<br />
+              <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            </label>
+            <label style={{ gridColumn: "1 / span 2" }}>
+              Concepto<br />
+              <input
+                value={concepto}
+                onChange={(e) => setConcepto(e.target.value)}
+                placeholder="Concepto general / Observación"
+              />
+            </label>
+          </div>
+
+          <table style={{ borderCollapse: "collapse", width: "100%", marginBottom: 10 }}>
+            <thead>
+              <tr>
+                <th style={th}>Descripción</th>
+                <th style={th}>Cant.</th>
+                <th style={th}>Precio</th>
+                <th style={th}>Importe</th>
+                <th style={th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((r) => {
+                const importe = Number(r.cantidad || 0) * Number(r.precio || 0);
+                return (
+                  <tr key={r.id}>
+                    <td style={td}>
+                      <input
+                        value={r.descripcion}
+                        onChange={(e) => updateRow(r.id, { descripcion: e.target.value })}
+                        placeholder="Descripción del ítem"
+                        style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td style={td} width={110}>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={r.cantidad}
+                        onChange={(e) => updateRow(r.id, { cantidad: Number(e.target.value || 0) })}
+                        style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td style={td} width={140}>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={r.precio}
+                        onChange={(e) => updateRow(r.id, { precio: Number(e.target.value || 0) })}
+                        style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td style={td} width={140}>{currency(importe)}</td>
+                    <td style={td} width={80}>
+                      <button onClick={() => delRow(r.id)}>×</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {items.length === 0 && (
+                <tr><td style={td} colSpan={5}>Sin ítems.</td></tr>
+              )}
+            </tbody>
+          </table>
+
+          <div style={{ marginBottom: 10 }}>
+            <button onClick={addRow}>+ Ítem</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center" }}>
+            <label>
+              IVA %<br />
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={ivaPct}
+                onChange={(e) => setIvaPct(Number(e.target.value || 0))}
+                style={{ width: 120 }}
+              />
+            </label>
+            <div style={{ textAlign: "right" }}>
+              <div>Subtotal: <b>{currency(totals.subtotal)}</b></div>
+              <div>IVA: <b>{currency(totals.iva)}</b></div>
+              <div>Total: <b>{currency(totals.total)}</b></div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <button
+              disabled={!canSave}
+              onClick={() => {
+                onCrear({ clienteId, fecha, concepto, items, ivaPct });
+                // limpiar form
+                setClienteId("");
+                setFecha(todayISO());
+                setConcepto("Servicios de ingeniería");
+                setIvaPct(21);
+                setItems([{ id: uid(), descripcion: "Tarea / rubro", cantidad: 1, precio: 0 }]);
+              }}
+            >
+              Guardar factura
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ===== estilos mínimos de tabla ===== */
 const th = { borderBottom: "1px solid #ddd", textAlign: "left", padding: "8px 6px" };
 const td = { borderBottom: "1px solid #f0f0f0", padding: "6px" };
-
 
 
