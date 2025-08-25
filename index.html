@@ -1,33 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ingeniería Civil – Facturación & Cobros</title>
-
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#111827" />
+    <title>Servicios de Ingeniería Civil S.R.L.</title>
+    <link rel="manifest" href="/manifest.webmanifest">
   </head>
   <body>
-    <!-- ¡IMPORTANTE! Aquí se monta React -->
     <div id="root"></div>
 
     <script>
-      // Config de tu Apps Script
-      window.__APPSCRIPT_BASE__ =
-        "https://script.google.com/macros/s/AKfycbyM-s7oY2eSyHdyO6iPpQcb-V71jDI1CbCx09oOv-knPDM9JaGb811mP9SZm18vtkRCCw/exec";
+      // Variables globales para conectar con Google Apps Script
+      window.__APPSCRIPT_BASE__ = "https://script.google.com/macros/s/AKfycbyM-s7oY2eSyHdyO6iPpQcb-V71jDl1CbCx09oOv-knPDM9JaGb811mP9SZm18vtkRCCw/exec";
       window.__APPSCRIPT_TOKEN__ = "GRETA";
 
-      // Registrar Service Worker para PWA
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/service-worker.js");
-        });
-      }
+      // 🔹 IMPORTANTE: desactivamos el service worker por ahora
+      // (era lo que dejaba todo en blanco al cargar)
+      // Más adelante, si querés PWA, lo reactivamos con versión segura.
     </script>
 
-    <!-- Entrada de Vite/React (bien cerrada y sin letras extra) -->
+    <!-- Tu app React -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+
