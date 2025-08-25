@@ -148,7 +148,7 @@ function Clientes({ clientes, onAdd, onVerCuenta }) {
         </thead>
         <tbody>
           {clientes.map((c) => (
-            <tr key={c.ID} style={{ borderTop: "1px solid #eee" }}>
+            <tr key={idx} style={{ borderTop: "1px solid #eee" }}>
               <td>{c.Nombre}</td>
               <td>{c.Empresa}</td>
               <td>{c.Contacto}</td>
