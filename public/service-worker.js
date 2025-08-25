@@ -1,6 +1,6 @@
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open('iciv-cache-v4').then((cache) => cache.addAll([
+    caches.open('iciv-cache-v8').then((cache) => cache.addAll([
       '/',
       '/index.html',
       '/manifest.webmanifest',
