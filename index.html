@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingeniería Civil – Facturación & Cobros</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#111827" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.__APPSCRIPT_BASE__ = "https://script.google.com/macros/s/AKfycbwMKvYVCivpkwO_h9p6GOYU2hjcaP1i20EIpYKA8f3IiYZL0xeLG_T_5GGHewmsZU7ggQ/exec";
+      window.__APPSCRIPT_TOKEN__ = "GRETA";
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js');
+        });
+      }
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
