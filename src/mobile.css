@@ -1,144 +1,130 @@
-/* ====== Mobile-first sin cambiar tu JSX ====== */
-
-/* Variables de color */
-:root{
-  --bg:#ffffff;
-  --fg:#111;
-  --muted:#6b7280;
-  --brand:#0ea5e9;     /* celeste */
-  --border:#e5e7eb;
-  --card:#fafafa;
+/* —————————————————— */
+/* Base (opcional bonito) */
+:root {
+  --bg: #f7f8fa;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --primary: #111827;
 }
 
-/* Reset suave */
-*{ box-sizing: border-box; }
-html, body{ height:100%; }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color:var(--fg);
-  background:var(--bg);
-  line-height:1.45;
+html, body {
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tipografías adaptables */
-h1{ font-size: clamp(22px, 4.2vw, 32px); margin: 16px 0 10px; }
-h2{ font-size: clamp(18px, 3.4vw, 24px); margin: 16px 0 10px; }
-h3{ font-size: clamp(16px, 3vw, 20px);  margin: 12px 0 8px; }
-
-/* Contenedor general (sin romper desktop) */
-main, .container, #root > div{
-  padding-left: clamp(10px, 4vw, 18px);
-  padding-right: clamp(10px, 4vw, 18px);
-}
-
-/* Inputs, selects, textarea y botones: tamaño táctil */
-input, select, textarea, button{
-  font: inherit;
-  color: inherit;
-  max-width: 100%;
-}
-input, select, textarea{
+/* Contenedor de tabla (en desktop no cambia nada) */
+.table-wrap {
   width: 100%;
+}
+
+/* Tabla normal (desktop) */
+.resptable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.resptable th,
+.resptable td {
   padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #fff;
-}
-textarea{ min-height: 110px; resize: vertical; }
-
-input:focus, select:focus, textarea:focus{
-  outline: 2px solid rgba(14,165,233,.35);
-  border-color: var(--brand);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
 }
 
-/* Botones genéricos (si ya tenés estilos, esto sólo los hace más grandes) */
-button{
-  cursor: pointer;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
-  padding: 12px 16px;
-}
-button:disabled{ opacity:.6; cursor:not-allowed; }
-
-/* Botón “principal” (si lo usás) */
-button.primary{
-  background: var(--brand);
-  border-color: var(--brand);
-  color:#fff;
-}
-
-/* Espacios mínimos reutilizables */
-.mt-2{ margin-top:8px; } .mt-3{ margin-top:12px; } .mt-4{ margin-top:16px; }
-.mb-2{ margin-bottom:8px; } .mb-3{ margin-bottom:12px; } .mb-4{ margin-bottom:16px; }
-
-/* Etiquetas encima de inputs (si usás <label>) */
-label{ display:block; margin-bottom:6px; color:var(--muted); font-size:.92rem; }
-
-/* ====== Tablas responsivas SIN tocar JSX ====== */
-/* Hacemos que la tabla no “rompa” en móvil: */
-table{
-  width: 100%;
-  border-collapse: collapse;
-  background:#fff;
-  display: block;               /* clave */
-  overflow-x: auto;             /* scroll horizontal */
-  -webkit-overflow-scrolling: touch;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding-bottom: 4px;          /* separador para el scroll */
-}
-
-/* Forzamos ancho mínimo razonable: si no entra en la pantalla, scrollea */
-table thead, table tbody, table tr{
-  display: table;               /* preserva layout de la tabla adentro */
-  width: 100%;
-  table-layout: fixed;
-  min-width: 720px;             /* ajustá si querés más/menos */
-}
-
-th, td{
-  border-bottom: 1px solid var(--border);
+.resptable th {
   text-align: left;
-  padding: 12px 10px;
-  vertical-align: top;
+  font-weight: 700;
+  color: var(--muted);
+  background: #fafafa;
 }
-thead th{ font-weight: 600; background: var(--card); }
 
-/* Hilite leve */
-tbody tr:hover td{ background:#fcfcfc; }
+.resptable tr:last-child td {
+  border-bottom: none;
+}
 
-/* ====== Formularios + columnas fluidas SIN tocar JSX ====== */
-/* Pone los inputs en columna en móviles si estaban apretados en la misma fila */
-@media (max-width: 880px){
-  /* Cualquier fila con inputs consecutivos se acomoda en columna */
-  .row, .form-row, .grid, .columns{
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+/* —————————————————— */
+/* MODO MÓVIL: la tabla se convierte en tarjetas */
+@media (max-width: 768px) {
+  /* Ocultamos cabecera y “convertimos” todo en bloques */
+  .resptable,
+  .resptable thead,
+  .resptable tbody,
+  .resptable th,
+  .resptable td,
+  .resptable tr {
+    display: block;
   }
 
-  /* separa inputs colocados en la misma línea */
-  input + input, select + select, textarea + textarea{
-    margin-top: 12px;
+  .resptable thead {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  /* Cada fila se vuelve “card” */
+  .resptable tr {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin: 12px 0;
+    padding: 10px 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+
+  /* Cada celda: “Etiqueta: valor” */
+  .resptable td {
+    border: none;
+    border-bottom: 1px dashed var(--line);
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 4px;
+  }
+
+  /* Última celda sin línea */
+  .resptable td:last-child {
+    border-bottom: none;
+    padding-bottom: 4px;
+  }
+
+  /* Etiqueta (viene del data-label) */
+  .resptable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
+    flex: 1 1 auto;
+    padding-right: 10px;
+  }
+
+  /* Valor a la derecha */
+  .resptable td > * {
+    text-align: right;
+    flex: 0 0 auto;
+  }
+
+  /* Botoneras/acciones dentro de la card */
+  .resptable td.actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* Inputs/Selects dentro de tablas se ven mejor */
+  .resptable td input,
+  .resptable td select,
+  .resptable td button {
+    font-size: 16px;          /* evita zoom en iOS */
+    padding: 10px 12px;
+    border-radius: 10px;
   }
 }
 
-/* ====== Resumen/totales “sticky” si existe un bloque de totales ====== */
-.totales, .totals, .summary, .resumen{
-  position: sticky;
-  bottom: 12px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding: 10px 12px;
-  z-index: 5;
-}
-
-/* ====== Paddings inferiores para evitar que algo quede tapado por barras móviles ====== */
-@media (max-width: 640px){
-  body{ padding-bottom: 80px; }
-}
