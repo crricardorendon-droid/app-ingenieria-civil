@@ -15,6 +15,7 @@ async function api(params) {
     if (!j.ok) throw new Error(j.error || "Error API");
     return j;
   } catch (e) {
+    // Si devolvió HTML (login), lo aviso claro
     if (txt.startsWith("<")) {
       throw new Error(
         "El backend devolvió HTML (login). En Apps Script: 'Cualquiera con el enlace' + volver a Implementar."
@@ -43,7 +44,7 @@ const ddmmyyyy = (v) => {
 };
 
 export default function AppIngenieriaCivil() {
-  const [vista, setVista] = useState("dashboard"); // dashboard | clientes | facturacion | cta
+  const [vista, setVista] = useState("dashboard"); // dashboard | clientes | facturacion | cta | cobros
   const [loading, setLoading] = useState(false);
 
   /** CLIENTES */
@@ -74,10 +75,11 @@ export default function AppIngenieriaCivil() {
   /** COBRO (recibo) */
   const [rc, setRc] = useState({
     fecha: todayISO(),
-    nombre: "",
+    nombre: "", // se completa con clienteSel.nombre si cobrás desde CTA
     medio: "Transferencia",
     obs: "",
-    aplica: {}, // { [facturaId]: montoAplicado }
+    // Aplicación manual por factura: { [facturaId]: montoAplicado }
+    aplica: {},
   });
 
   // ====== CARGA INICIAL ======
@@ -291,6 +293,7 @@ export default function AppIngenieriaCivil() {
         medio: rc.medio,
         obs: rc.obs,
         items: JSON.stringify(items),
+        // monto: opcional (si no lo pasamos, el backend suma aplicado)
       });
       alert(`Recibo guardado. N° ${j.numero}`);
 
@@ -316,7 +319,7 @@ export default function AppIngenieriaCivil() {
       <h1>Servicios de Ingeniería Civil S.R.L.</h1>
 
       {/* Menú */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         <button onClick={() => setVista("dashboard")}>Dashboard</button>
         <button onClick={() => setVista("clientes")}>Clientes</button>
         <button onClick={() => setVista("facturacion")}>Facturación</button>
@@ -354,7 +357,7 @@ export default function AppIngenieriaCivil() {
           <h2>Clientes</h2>
 
           {/* Alta */}
-          <div style={{ display: "flex", gap: 8, margin: "8px 0 16px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, margin: "8px 0 16px" }}>
             <input
               placeholder="Nombre"
               value={nuevoCli.nombre}
@@ -379,14 +382,14 @@ export default function AppIngenieriaCivil() {
             <button onClick={crearCliente}>+ Agregar</button>
           </div>
 
-          {/* Tabla clásica responsive (sin scroll lateral) */}
-          <table className="resptbl">
+          {/* Tabla */}
+          <table width="100%" cellPadding={8} style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Empresa</th>
-                <th>Contacto</th>
-                <th>Acciones</th>
+              <tr style={{ background: "#f5f5f5" }}>
+                <th align="left">Nombre</th>
+                <th align="left">Empresa</th>
+                <th align="left">Contacto</th>
+                <th align="left">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -398,7 +401,7 @@ export default function AppIngenieriaCivil() {
                 </tr>
               )}
               {clientes.map((c) => (
-                <tr key={c.id}>
+                <tr key={c.id} style={{ borderTop: "1px solid #eee" }}>
                   <td>
                     {editCliId === c.id ? (
                       <input
@@ -435,7 +438,7 @@ export default function AppIngenieriaCivil() {
                       c.contacto
                     )}
                   </td>
-                  <td className="actions">
+                  <td>
                     {editCliId === c.id ? (
                       <>
                         <button onClick={() => saveEditCliente(c.id)}>
@@ -536,19 +539,19 @@ export default function AppIngenieriaCivil() {
           </div>
 
           <h3>Ítems</h3>
-          <table className="resptbl">
+          <table width="100%" cellPadding={8} style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr>
-                <th>Descripción</th>
-                <th className="num">Cant.</th>
-                <th className="num">Precio</th>
-                <th className="num">Importe</th>
+              <tr style={{ background: "#f5f5f5" }}>
+                <th align="left">Descripción</th>
+                <th>Cant.</th>
+                <th>Precio</th>
+                <th align="right">Importe</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {fact.items.map((it, idx) => (
-                <tr key={idx}>
+                <tr key={idx} style={{ borderTop: "1px solid #eee" }}>
                   <td>
                     <input
                       value={it.descripcion}
@@ -563,7 +566,7 @@ export default function AppIngenieriaCivil() {
                       style={{ width: "100%" }}
                     />
                   </td>
-                  <td className="num">
+                  <td width={120} align="center">
                     <input
                       type="number"
                       min="0"
@@ -579,7 +582,7 @@ export default function AppIngenieriaCivil() {
                       style={{ width: 90, textAlign: "right" }}
                     />
                   </td>
-                  <td className="num">
+                  <td width={160} align="center">
                     <input
                       type="number"
                       min="0"
@@ -595,9 +598,7 @@ export default function AppIngenieriaCivil() {
                       style={{ width: 120, textAlign: "right" }}
                     />
                   </td>
-                  <td className="num">
-                    {fmtMoney((it.cantidad || 0) * (it.precio || 0))}
-                  </td>
+                  <td align="right">{fmtMoney((it.cantidad || 0) * (it.precio || 0))}</td>
                   <td align="center" width={50}>
                     <button onClick={() => delItem(idx)}>×</button>
                   </td>
@@ -605,6 +606,10 @@ export default function AppIngenieriaCivil() {
               ))}
             </tbody>
           </table>
+
+          <div style={{ marginTop: 8 }}>
+            <button onClick={addItem}>+ Ítem</button>
+          </div>
 
           <div
             style={{
@@ -645,24 +650,24 @@ export default function AppIngenieriaCivil() {
             {/* Facturas */}
             <div>
               <h3>Facturas</h3>
-              <table className="resptbl">
+              <table width="100%" cellPadding={6} style={{ borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>
+                  <tr style={{ background: "#f5f5f5" }}>
                     <th>Fecha</th>
-                    <th className="num">Número</th>
-                    <th className="num">Total</th>
-                    <th className="num">Saldo</th>
-                    <th className="hide-sm">Estado</th>
+                    <th>Número</th>
+                    <th>Total</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {cta.facturas.map((f) => (
-                    <tr key={f.id}>
+                    <tr key={f.id} style={{ borderTop: "1px solid #eee" }}>
                       <td>{ddmmyyyy(f.fecha)}</td>
-                      <td className="num">{f.numero || "-"}</td>
-                      <td className="num">{fmtMoney(f.total)}</td>
-                      <td className="num">{fmtMoney(f.saldo)}</td>
-                      <td className="hide-sm">{f.estado}</td>
+                      <td>{f.numero || "-"}</td>
+                      <td>{fmtMoney(f.total)}</td>
+                      <td>{fmtMoney(f.saldo)}</td>
+                      <td>{f.estado}</td>
                     </tr>
                   ))}
                   {cta.facturas.length === 0 && (
@@ -685,22 +690,22 @@ export default function AppIngenieriaCivil() {
             {/* Recibos y Cobro */}
             <div>
               <h3>Recibos</h3>
-              <table className="resptbl">
+              <table width="100%" cellPadding={6} style={{ borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>
+                  <tr style={{ background: "#f5f5f5" }}>
                     <th>Fecha</th>
-                    <th className="num">Número</th>
-                    <th className="hide-sm">Medio</th>
-                    <th className="num">Aplicado</th>
+                    <th>Número</th>
+                    <th>Medio</th>
+                    <th>Aplicado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {cta.recibos.map((r) => (
-                    <tr key={r.id}>
+                    <tr key={r.id} style={{ borderTop: "1px solid #eee" }}>
                       <td>{ddmmyyyy(r.fecha)}</td>
-                      <td className="num">{r.numero}</td>
-                      <td className="hide-sm">{r.medio}</td>
-                      <td className="num">{fmtMoney(r.aplicadoAlCliente)}</td>
+                      <td>{r.numero}</td>
+                      <td>{r.medio}</td>
+                      <td>{fmtMoney(r.aplicadoAlCliente)}</td>
                     </tr>
                   ))}
                   {cta.recibos.length === 0 && (
@@ -746,22 +751,22 @@ export default function AppIngenieriaCivil() {
 
                 <div style={{ marginTop: 10 }}>
                   <b>Aplicar a facturas</b>
-                  <table className="resptbl">
+                  <table width="100%" cellPadding={6} style={{ borderCollapse: "collapse" }}>
                     <thead>
-                      <tr>
+                      <tr style={{ background: "#f5f5f5" }}>
                         <th>Número</th>
-                        <th className="num">Saldo</th>
-                        <th className="num">Aplicar</th>
+                        <th>Saldo</th>
+                        <th>Aplicar</th>
                       </tr>
                     </thead>
                     <tbody>
                       {cta.facturas
                         .filter((f) => Number(f.saldo || 0) > 0)
                         .map((f) => (
-                          <tr key={f.id}>
+                          <tr key={f.id} style={{ borderTop: "1px solid #eee" }}>
                             <td>{f.numero || f.id}</td>
-                            <td className="num">{fmtMoney(f.saldo)}</td>
-                            <td className="num">
+                            <td>{fmtMoney(f.saldo)}</td>
+                            <td>
                               <input
                                 type="number"
                                 min="0"
@@ -784,7 +789,6 @@ export default function AppIngenieriaCivil() {
                       )}
                     </tbody>
                   </table>
-
                   <div style={{ textAlign: "right", marginTop: 8 }}>
                     Total a cobrar: <b>{fmtMoney(totalAplicado)}</b>
                   </div>
@@ -803,4 +807,3 @@ export default function AppIngenieriaCivil() {
     </div>
   );
 }
-
