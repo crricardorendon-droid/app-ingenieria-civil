@@ -15,7 +15,6 @@ async function api(params) {
     if (!j.ok) throw new Error(j.error || "Error API");
     return j;
   } catch (e) {
-    // Si devolvió HTML (login), lo aviso claro
     if (txt.startsWith("<")) {
       throw new Error(
         "El backend devolvió HTML (login). En Apps Script: 'Cualquiera con el enlace' + volver a Implementar."
@@ -78,8 +77,7 @@ export default function AppIngenieriaCivil() {
     nombre: "", // se completa con clienteSel.nombre si cobrás desde CTA
     medio: "Transferencia",
     obs: "",
-    // Aplicación manual por factura: { [facturaId]: montoAplicado }
-    aplica: {},
+    aplica: {}, // { [facturaId]: montoAplicado }
   });
 
   // ====== CARGA INICIAL ======
@@ -293,7 +291,6 @@ export default function AppIngenieriaCivil() {
         medio: rc.medio,
         obs: rc.obs,
         items: JSON.stringify(items),
-        // monto: opcional (si no lo pasamos, el backend suma aplicado)
       });
       alert(`Recibo guardado. N° ${j.numero}`);
 
@@ -357,7 +354,7 @@ export default function AppIngenieriaCivil() {
           <h2>Clientes</h2>
 
           {/* Alta */}
-          <div style={{ display: "flex", gap: 8, margin: "8px 0 16px" }}>
+          <div style={{ display: "flex", gap: 8, margin: "8px 0 16px", flexWrap: "wrap" }}>
             <input
               placeholder="Nombre"
               value={nuevoCli.nombre}
@@ -382,84 +379,86 @@ export default function AppIngenieriaCivil() {
             <button onClick={crearCliente}>+ Agregar</button>
           </div>
 
-          {/* Tabla */}
-          <table width="100%" cellPadding={8} style={{ borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#f5f5f5" }}>
-                <th align="left">Nombre</th>
-                <th align="left">Empresa</th>
-                <th align="left">Contacto</th>
-                <th align="left">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.length === 0 && (
+          {/* Tabla responsive */}
+          <div className="table-wrap">
+            <table className="resptable">
+              <thead>
                 <tr>
-                  <td colSpan={4} align="center" style={{ color: "#666" }}>
-                    Sin clientes aún…
-                  </td>
+                  <th>Nombre</th>
+                  <th>Empresa</th>
+                  <th>Contacto</th>
+                  <th>Acciones</th>
                 </tr>
-              )}
-              {clientes.map((c) => (
-                <tr key={c.id} style={{ borderTop: "1px solid #eee" }}>
-                  <td>
-                    {editCliId === c.id ? (
-                      <input
-                        value={editCli.nombre}
-                        onChange={(e) =>
-                          setEditCli({ ...editCli, nombre: e.target.value })
-                        }
-                      />
-                    ) : (
-                      c.nombre
-                    )}
-                  </td>
-                  <td>
-                    {editCliId === c.id ? (
-                      <input
-                        value={editCli.empresa}
-                        onChange={(e) =>
-                          setEditCli({ ...editCli, empresa: e.target.value })
-                        }
-                      />
-                    ) : (
-                      c.empresa
-                    )}
-                  </td>
-                  <td>
-                    {editCliId === c.id ? (
-                      <input
-                        value={editCli.contacto}
-                        onChange={(e) =>
-                          setEditCli({ ...editCli, contacto: e.target.value })
-                        }
-                      />
-                    ) : (
-                      c.contacto
-                    )}
-                  </td>
-                  <td>
-                    {editCliId === c.id ? (
-                      <>
-                        <button onClick={() => saveEditCliente(c.id)}>
-                          Guardar
-                        </button>{" "}
-                        <button onClick={() => setEditCliId(null)}>
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => verCTA(c)}>Ver cuenta</button>{" "}
-                        <button onClick={() => startEditCliente(c)}>Editar</button>{" "}
-                        <button onClick={() => borrarCliente(c.id)}>Eliminar</button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {clientes.length === 0 && (
+                  <tr>
+                    <td data-label="Nombre" colSpan={4} align="center" style={{ color: "#666" }}>
+                      Sin clientes aún…
+                    </td>
+                  </tr>
+                )}
+                {clientes.map((c) => (
+                  <tr key={c.id}>
+                    <td data-label="Nombre">
+                      {editCliId === c.id ? (
+                        <input
+                          value={editCli.nombre}
+                          onChange={(e) =>
+                            setEditCli({ ...editCli, nombre: e.target.value })
+                          }
+                        />
+                      ) : (
+                        c.nombre
+                      )}
+                    </td>
+                    <td data-label="Empresa">
+                      {editCliId === c.id ? (
+                        <input
+                          value={editCli.empresa}
+                          onChange={(e) =>
+                            setEditCli({ ...editCli, empresa: e.target.value })
+                          }
+                        />
+                      ) : (
+                        c.empresa
+                      )}
+                    </td>
+                    <td data-label="Contacto">
+                      {editCliId === c.id ? (
+                        <input
+                          value={editCli.contacto}
+                          onChange={(e) =>
+                            setEditCli({ ...editCli, contacto: e.target.value })
+                          }
+                        />
+                      ) : (
+                        c.contacto
+                      )}
+                    </td>
+                    <td data-label="Acciones" className="actions">
+                      {editCliId === c.id ? (
+                        <>
+                          <button onClick={() => saveEditCliente(c.id)}>
+                            Guardar
+                          </button>{" "}
+                          <button onClick={() => setEditCliId(null)}>
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => verCTA(c)}>Ver cuenta</button>{" "}
+                          <button onClick={() => startEditCliente(c)}>Editar</button>{" "}
+                          <button onClick={() => borrarCliente(c.id)}>Eliminar</button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -539,76 +538,76 @@ export default function AppIngenieriaCivil() {
           </div>
 
           <h3>Ítems</h3>
-          <table width="100%" cellPadding={8} style={{ borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#f5f5f5" }}>
-                <th align="left">Descripción</th>
-                <th>Cant.</th>
-                <th>Precio</th>
-                <th align="right">Importe</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {fact.items.map((it, idx) => (
-                <tr key={idx} style={{ borderTop: "1px solid #eee" }}>
-                  <td>
-                    <input
-                      value={it.descripcion}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setFact((f) => {
-                          const a = [...f.items];
-                          a[idx] = { ...a[idx], descripcion: v };
-                          return { ...f, items: a };
-                        });
-                      }}
-                      style={{ width: "100%" }}
-                    />
-                  </td>
-                  <td width={120} align="center">
-                    <input
-                      type="number"
-                      min="0"
-                      value={it.cantidad}
-                      onChange={(e) => {
-                        const v = Number(e.target.value || 0);
-                        setFact((f) => {
-                          const a = [...f.items];
-                          a[idx] = { ...a[idx], cantidad: v };
-                          return { ...f, items: a };
-                        });
-                      }}
-                      style={{ width: 90, textAlign: "right" }}
-                    />
-                  </td>
-                  <td width={160} align="center">
-                    <input
-                      type="number"
-                      min="0"
-                      value={it.precio}
-                      onChange={(e) => {
-                        const v = Number(e.target.value || 0);
-                        setFact((f) => {
-                          const a = [...f.items];
-                          a[idx] = { ...a[idx], precio: v };
-                          return { ...f, items: a };
-                        });
-                      }}
-                      style={{ width: 120, textAlign: "right" }}
-                    />
-                  </td>
-                  <td align="right">{fmtMoney((it.cantidad || 0) * (it.precio || 0))}</td>
-                  <td align="center" width={50}>
-                    <button onClick={() => delItem(idx)}>×</button>
-                  </td>
+          <div className="table-wrap">
+            <table className="resptable">
+              <thead>
+                <tr>
+                  <th>Descripción</th>
+                  <th>Cant.</th>
+                  <th>Precio</th>
+                  <th>Importe</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div style={{ marginTop: 8 }}>
-            <button onClick={addItem}>+ Ítem</button>
+              </thead>
+              <tbody>
+                {fact.items.map((it, idx) => (
+                  <tr key={idx}>
+                    <td data-label="Descripción">
+                      <input
+                        value={it.descripcion}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFact((f) => {
+                            const a = [...f.items];
+                            a[idx] = { ...a[idx], descripcion: v };
+                            return { ...f, items: a };
+                          });
+                        }}
+                        style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td data-label="Cant." width={120} align="center">
+                      <input
+                        type="number"
+                        min="0"
+                        value={it.cantidad}
+                        onChange={(e) => {
+                          const v = Number(e.target.value || 0);
+                          setFact((f) => {
+                            const a = [...f.items];
+                            a[idx] = { ...a[idx], cantidad: v };
+                            return { ...f, items: a };
+                          });
+                        }}
+                        style={{ width: 90, textAlign: "right" }}
+                      />
+                    </td>
+                    <td data-label="Precio" width={160} align="center">
+                      <input
+                        type="number"
+                        min="0"
+                        value={it.precio}
+                        onChange={(e) => {
+                          const v = Number(e.target.value || 0);
+                          setFact((f) => {
+                            const a = [...f.items];
+                            a[idx] = { ...a[idx], precio: v };
+                            return { ...f, items: a };
+                          });
+                        }}
+                        style={{ width: 120, textAlign: "right" }}
+                      />
+                    </td>
+                    <td data-label="Importe" align="right">
+                      {fmtMoney((it.cantidad || 0) * (it.precio || 0))}
+                    </td>
+                    <td data-label=" " align="center" width={50}>
+                      <button onClick={() => delItem(idx)}>×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <div
@@ -650,35 +649,37 @@ export default function AppIngenieriaCivil() {
             {/* Facturas */}
             <div>
               <h3>Facturas</h3>
-              <table width="100%" cellPadding={6} style={{ borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#f5f5f5" }}>
-                    <th>Fecha</th>
-                    <th>Número</th>
-                    <th>Total</th>
-                    <th>Saldo</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cta.facturas.map((f) => (
-                    <tr key={f.id} style={{ borderTop: "1px solid #eee" }}>
-                      <td>{ddmmyyyy(f.fecha)}</td>
-                      <td>{f.numero || "-"}</td>
-                      <td>{fmtMoney(f.total)}</td>
-                      <td>{fmtMoney(f.saldo)}</td>
-                      <td>{f.estado}</td>
-                    </tr>
-                  ))}
-                  {cta.facturas.length === 0 && (
+              <div className="table-wrap">
+                <table className="resptable">
+                  <thead>
                     <tr>
-                      <td colSpan={5} align="center" style={{ color: "#666" }}>
-                        Sin facturas…
-                      </td>
+                      <th>Fecha</th>
+                      <th>Número</th>
+                      <th>Total</th>
+                      <th>Saldo</th>
+                      <th>Estado</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {cta.facturas.map((f) => (
+                      <tr key={f.id}>
+                        <td data-label="Fecha">{ddmmyyyy(f.fecha)}</td>
+                        <td data-label="Número">{f.numero || "-"}</td>
+                        <td data-label="Total">{fmtMoney(f.total)}</td>
+                        <td data-label="Saldo">{fmtMoney(f.saldo)}</td>
+                        <td data-label="Estado">{f.estado}</td>
+                      </tr>
+                    ))}
+                    {cta.facturas.length === 0 && (
+                      <tr>
+                        <td data-label="-" colSpan={5} align="center" style={{ color: "#666" }}>
+                          Sin facturas…
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
               <div style={{ marginTop: 10 }}>
                 <b>Totales:</b> Facturado {fmtMoney(cta.totales.facturado)} — Cobrado{" "}
@@ -690,33 +691,35 @@ export default function AppIngenieriaCivil() {
             {/* Recibos y Cobro */}
             <div>
               <h3>Recibos</h3>
-              <table width="100%" cellPadding={6} style={{ borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#f5f5f5" }}>
-                    <th>Fecha</th>
-                    <th>Número</th>
-                    <th>Medio</th>
-                    <th>Aplicado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cta.recibos.map((r) => (
-                    <tr key={r.id} style={{ borderTop: "1px solid #eee" }}>
-                      <td>{ddmmyyyy(r.fecha)}</td>
-                      <td>{r.numero}</td>
-                      <td>{r.medio}</td>
-                      <td>{fmtMoney(r.aplicadoAlCliente)}</td>
-                    </tr>
-                  ))}
-                  {cta.recibos.length === 0 && (
+              <div className="table-wrap">
+                <table className="resptable">
+                  <thead>
                     <tr>
-                      <td colSpan={4} align="center" style={{ color: "#666" }}>
-                        Sin cobros…
-                      </td>
+                      <th>Fecha</th>
+                      <th>Número</th>
+                      <th>Medio</th>
+                      <th>Aplicado</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {cta.recibos.map((r) => (
+                      <tr key={r.id}>
+                        <td data-label="Fecha">{ddmmyyyy(r.fecha)}</td>
+                        <td data-label="Número">{r.numero}</td>
+                        <td data-label="Medio">{r.medio}</td>
+                        <td data-label="Aplicado">{fmtMoney(r.aplicadoAlCliente)}</td>
+                      </tr>
+                    ))}
+                    {cta.recibos.length === 0 && (
+                      <tr>
+                        <td data-label="-" colSpan={4} align="center" style={{ color: "#666" }}>
+                          Sin cobros…
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
               <div style={{ marginTop: 16, borderTop: "1px solid #eee", paddingTop: 12 }}>
                 <h3>Registrar cobro</h3>
@@ -751,44 +754,47 @@ export default function AppIngenieriaCivil() {
 
                 <div style={{ marginTop: 10 }}>
                   <b>Aplicar a facturas</b>
-                  <table width="100%" cellPadding={6} style={{ borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ background: "#f5f5f5" }}>
-                        <th>Número</th>
-                        <th>Saldo</th>
-                        <th>Aplicar</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cta.facturas
-                        .filter((f) => Number(f.saldo || 0) > 0)
-                        .map((f) => (
-                          <tr key={f.id} style={{ borderTop: "1px solid #eee" }}>
-                            <td>{f.numero || f.id}</td>
-                            <td>{fmtMoney(f.saldo)}</td>
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={rc.aplica?.[f.id] ?? 0}
-                                onChange={(e) =>
-                                  setAplicado(f.id, e.target.value, f.saldo)
-                                }
-                                style={{ width: 120, textAlign: "right" }}
-                              />
+                  <div className="table-wrap">
+                    <table className="resptable">
+                      <thead>
+                        <tr>
+                          <th>Número</th>
+                          <th>Saldo</th>
+                          <th>Aplicar</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cta.facturas
+                          .filter((f) => Number(f.saldo || 0) > 0)
+                          .map((f) => (
+                            <tr key={f.id}>
+                              <td data-label="Número">{f.numero || f.id}</td>
+                              <td data-label="Saldo">{fmtMoney(f.saldo)}</td>
+                              <td data-label="Aplicar">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={rc.aplica?.[f.id] ?? 0}
+                                  onChange={(e) =>
+                                    setAplicado(f.id, e.target.value, f.saldo)
+                                  }
+                                  style={{ width: 120, textAlign: "right" }}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        {cta.facturas.filter((f) => Number(f.saldo || 0) > 0).length === 0 && (
+                          <tr>
+                            <td data-label="-" colSpan={3} align="center" style={{ color: "#666" }}>
+                              No hay facturas abiertas.
                             </td>
                           </tr>
-                        ))}
-                      {cta.facturas.filter((f) => Number(f.saldo || 0) > 0).length === 0 && (
-                        <tr>
-                          <td colSpan={3} align="center" style={{ color: "#666" }}>
-                            No hay facturas abiertas.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
                   <div style={{ textAlign: "right", marginTop: 8 }}>
                     Total a cobrar: <b>{fmtMoney(totalAplicado)}</b>
                   </div>
