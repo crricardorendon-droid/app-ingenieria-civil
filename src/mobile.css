@@ -1,0 +1,195 @@
+/* ===== Reset & base móvil ===== */
+:root{
+  --bg:#ffffff;
+  --fg:#111;
+  --muted:#666;
+  --brand:#0ea5e9;            /* celeste */
+  --border:#e5e7eb;
+  --card:#fafafa;
+  --danger:#ef4444;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color:var(--fg);
+  background:var(--bg);
+  line-height:1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* contenedor con margen lateral cómodo */
+.container{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 12px;
+}
+
+/* títulos compactos */
+h1{ font-size: clamp(22px, 4vw, 32px); margin: 12px 0 8px; }
+h2{ font-size: clamp(18px, 3.4vw, 22px); margin: 18px 0 10px; }
+h3{ font-size: clamp(16px, 3vw, 18px); margin: 14px 0 8px; }
+
+/* ===== Navegación (tabs) ===== */
+.tabs{
+  display:flex; gap:8px; flex-wrap:wrap;
+  margin: 8px 0 16px;
+}
+.tab{
+  font: inherit;
+  border:1px solid var(--border);
+  background:#fff;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.tab.is-active{
+  background: var(--brand);
+  border-color: var(--brand);
+  color:#fff;
+}
+
+/* Stickea los tabs abajo en móviles */
+@media (max-width: 640px){
+  .tabs{
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top:1px solid var(--border);
+    padding:10px 12px;
+    z-index: 50;
+    justify-content:space-between;
+  }
+  main{ padding-bottom: 78px; } /* deja lugar para la barra */
+}
+
+/* ===== Controles táctiles cómodos ===== */
+input, select, textarea, button{
+  font: inherit;
+  color: inherit;
+}
+.input, .select, .textarea{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+  background:#fff;
+}
+.input:focus, .select:focus, .textarea:focus{
+  outline: 2px solid rgba(14,165,233,.35);
+  border-color: var(--brand);
+}
+.button{
+  display:inline-flex; align-items:center; justify-content:center;
+  gap:8px;
+  padding:12px 16px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+}
+.button.primary{
+  background: var(--brand);
+  border-color: var(--brand);
+  color:#fff;
+}
+.button.danger{
+  background: #fff3f3;
+  border-color:#fecaca;
+  color:#b91c1c;
+}
+.button:disabled{
+  opacity:.6; cursor:not-allowed;
+}
+
+/* grupo de inputs en grilla responsiva */
+.form-grid{
+  display:grid; gap:12px;
+  grid-template-columns: 1fr 1fr;
+}
+.form-row{ display:flex; flex-direction:column; gap:6px; }
+label{ color:var(--muted); font-size:.9rem; }
+
+@media (max-width: 880px){
+  .form-grid{ grid-template-columns: 1fr; }
+}
+
+/* ===== Tablas ===== */
+/* No rompemos tu tabla: solo la ponemos en contenedor con scroll horizontal en móviles */
+.table-responsive{
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling: touch;
+  border:1px solid var(--border);
+  border-radius: 12px;
+  background:#fff;
+}
+table{
+  width:100%;
+  border-collapse: collapse;
+  min-width: 720px; /* fuerza scroll si se achica */
+}
+th, td{
+  padding:12px 10px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+  vertical-align: top;
+  background:#fff;
+}
+thead th{
+  font-weight:600;
+  background: var(--card);
+}
+tr:hover td{ background:#fcfcfc; }
+
+/* ===== Cards simples (útil para listas cortas) ===== */
+.card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+  padding:12px;
+}
+
+/* ===== Totales / resumen sticky abajo en forms largos ===== */
+.sticky-summary{
+  position: sticky;
+  bottom: 78px; /* despega de la barra de tabs en mobile */
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+}
+
+/* separadores suaves */
+.hr{
+  height:1px; background:var(--border); margin: 12px 0;
+}
+
+/* bloques de items en factura/recibo */
+.items{
+  display:flex; flex-direction:column; gap:10px;
+}
+.item-row{
+  display:grid; gap:8px;
+  grid-template-columns: 2.2fr 0.9fr 1.1fr auto;
+  align-items:center;
+}
+@media (max-width: 640px){
+  .item-row{ grid-template-columns: 1.6fr 0.7fr 1fr auto; }
+}
+
+/* botones de fila */
+.icon-btn{
+  width:42px; height:42px; border-radius:10px;
+  border:1px solid var(--border); background:#fff; cursor:pointer;
+}
+
+/* helpers */
+.mt-2{ margin-top:8px; }
+.mt-3{ margin-top:12px; }
+.mt-4{ margin-top:16px; }
+.mb-2{ margin-bottom:8px; }
+.mb-3{ margin-bottom:12px; }
+.mb-4{ margin-bottom:16px; }
