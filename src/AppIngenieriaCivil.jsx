@@ -43,7 +43,7 @@ const ddmmyyyy = (v) => {
 };
 
 export default function AppIngenieriaCivil() {
-  const [vista, setVista] = useState("dashboard"); // dashboard | clientes | facturacion | cta | cobros
+  const [vista, setVista] = useState("dashboard"); // dashboard | clientes | facturacion | cta
   const [loading, setLoading] = useState(false);
 
   /** CLIENTES */
@@ -74,7 +74,7 @@ export default function AppIngenieriaCivil() {
   /** COBRO (recibo) */
   const [rc, setRc] = useState({
     fecha: todayISO(),
-    nombre: "", // se completa con clienteSel.nombre si cobrás desde CTA
+    nombre: "",
     medio: "Transferencia",
     obs: "",
     aplica: {}, // { [facturaId]: montoAplicado }
@@ -316,7 +316,7 @@ export default function AppIngenieriaCivil() {
       <h1>Servicios de Ingeniería Civil S.R.L.</h1>
 
       {/* Menú */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <button onClick={() => setVista("dashboard")}>Dashboard</button>
         <button onClick={() => setVista("clientes")}>Clientes</button>
         <button onClick={() => setVista("facturacion")}>Facturación</button>
@@ -379,86 +379,84 @@ export default function AppIngenieriaCivil() {
             <button onClick={crearCliente}>+ Agregar</button>
           </div>
 
-          {/* Tabla responsive */}
-          <div className="table-wrap">
-            <table className="resptable">
-              <thead>
+          {/* Tabla clásica responsive (sin scroll lateral) */}
+          <table className="resptbl">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Empresa</th>
+                <th>Contacto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clientes.length === 0 && (
                 <tr>
-                  <th>Nombre</th>
-                  <th>Empresa</th>
-                  <th>Contacto</th>
-                  <th>Acciones</th>
+                  <td colSpan={4} align="center" style={{ color: "#666" }}>
+                    Sin clientes aún…
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {clientes.length === 0 && (
-                  <tr>
-                    <td data-label="Nombre" colSpan={4} align="center" style={{ color: "#666" }}>
-                      Sin clientes aún…
-                    </td>
-                  </tr>
-                )}
-                {clientes.map((c) => (
-                  <tr key={c.id}>
-                    <td data-label="Nombre">
-                      {editCliId === c.id ? (
-                        <input
-                          value={editCli.nombre}
-                          onChange={(e) =>
-                            setEditCli({ ...editCli, nombre: e.target.value })
-                          }
-                        />
-                      ) : (
-                        c.nombre
-                      )}
-                    </td>
-                    <td data-label="Empresa">
-                      {editCliId === c.id ? (
-                        <input
-                          value={editCli.empresa}
-                          onChange={(e) =>
-                            setEditCli({ ...editCli, empresa: e.target.value })
-                          }
-                        />
-                      ) : (
-                        c.empresa
-                      )}
-                    </td>
-                    <td data-label="Contacto">
-                      {editCliId === c.id ? (
-                        <input
-                          value={editCli.contacto}
-                          onChange={(e) =>
-                            setEditCli({ ...editCli, contacto: e.target.value })
-                          }
-                        />
-                      ) : (
-                        c.contacto
-                      )}
-                    </td>
-                    <td data-label="Acciones" className="actions">
-                      {editCliId === c.id ? (
-                        <>
-                          <button onClick={() => saveEditCliente(c.id)}>
-                            Guardar
-                          </button>{" "}
-                          <button onClick={() => setEditCliId(null)}>
-                            Cancelar
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => verCTA(c)}>Ver cuenta</button>{" "}
-                          <button onClick={() => startEditCliente(c)}>Editar</button>{" "}
-                          <button onClick={() => borrarCliente(c.id)}>Eliminar</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              )}
+              {clientes.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    {editCliId === c.id ? (
+                      <input
+                        value={editCli.nombre}
+                        onChange={(e) =>
+                          setEditCli({ ...editCli, nombre: e.target.value })
+                        }
+                      />
+                    ) : (
+                      c.nombre
+                    )}
+                  </td>
+                  <td>
+                    {editCliId === c.id ? (
+                      <input
+                        value={editCli.empresa}
+                        onChange={(e) =>
+                          setEditCli({ ...editCli, empresa: e.target.value })
+                        }
+                      />
+                    ) : (
+                      c.empresa
+                    )}
+                  </td>
+                  <td>
+                    {editCliId === c.id ? (
+                      <input
+                        value={editCli.contacto}
+                        onChange={(e) =>
+                          setEditCli({ ...editCli, contacto: e.target.value })
+                        }
+                      />
+                    ) : (
+                      c.contacto
+                    )}
+                  </td>
+                  <td className="actions">
+                    {editCliId === c.id ? (
+                      <>
+                        <button onClick={() => saveEditCliente(c.id)}>
+                          Guardar
+                        </button>{" "}
+                        <button onClick={() => setEditCliId(null)}>
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => verCTA(c)}>Ver cuenta</button>{" "}
+                        <button onClick={() => startEditCliente(c)}>Editar</button>{" "}
+                        <button onClick={() => borrarCliente(c.id)}>Eliminar</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -538,77 +536,75 @@ export default function AppIngenieriaCivil() {
           </div>
 
           <h3>Ítems</h3>
-          <div className="table-wrap">
-            <table className="resptable">
-              <thead>
-                <tr>
-                  <th>Descripción</th>
-                  <th>Cant.</th>
-                  <th>Precio</th>
-                  <th>Importe</th>
-                  <th></th>
+          <table className="resptbl">
+            <thead>
+              <tr>
+                <th>Descripción</th>
+                <th className="num">Cant.</th>
+                <th className="num">Precio</th>
+                <th className="num">Importe</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {fact.items.map((it, idx) => (
+                <tr key={idx}>
+                  <td>
+                    <input
+                      value={it.descripcion}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFact((f) => {
+                          const a = [...f.items];
+                          a[idx] = { ...a[idx], descripcion: v };
+                          return { ...f, items: a };
+                        });
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </td>
+                  <td className="num">
+                    <input
+                      type="number"
+                      min="0"
+                      value={it.cantidad}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        setFact((f) => {
+                          const a = [...f.items];
+                          a[idx] = { ...a[idx], cantidad: v };
+                          return { ...f, items: a };
+                        });
+                      }}
+                      style={{ width: 90, textAlign: "right" }}
+                    />
+                  </td>
+                  <td className="num">
+                    <input
+                      type="number"
+                      min="0"
+                      value={it.precio}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        setFact((f) => {
+                          const a = [...f.items];
+                          a[idx] = { ...a[idx], precio: v };
+                          return { ...f, items: a };
+                        });
+                      }}
+                      style={{ width: 120, textAlign: "right" }}
+                    />
+                  </td>
+                  <td className="num">
+                    {fmtMoney((it.cantidad || 0) * (it.precio || 0))}
+                  </td>
+                  <td align="center" width={50}>
+                    <button onClick={() => delItem(idx)}>×</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {fact.items.map((it, idx) => (
-                  <tr key={idx}>
-                    <td data-label="Descripción">
-                      <input
-                        value={it.descripcion}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setFact((f) => {
-                            const a = [...f.items];
-                            a[idx] = { ...a[idx], descripcion: v };
-                            return { ...f, items: a };
-                          });
-                        }}
-                        style={{ width: "100%" }}
-                      />
-                    </td>
-                    <td data-label="Cant." width={120} align="center">
-                      <input
-                        type="number"
-                        min="0"
-                        value={it.cantidad}
-                        onChange={(e) => {
-                          const v = Number(e.target.value || 0);
-                          setFact((f) => {
-                            const a = [...f.items];
-                            a[idx] = { ...a[idx], cantidad: v };
-                            return { ...f, items: a };
-                          });
-                        }}
-                        style={{ width: 90, textAlign: "right" }}
-                      />
-                    </td>
-                    <td data-label="Precio" width={160} align="center">
-                      <input
-                        type="number"
-                        min="0"
-                        value={it.precio}
-                        onChange={(e) => {
-                          const v = Number(e.target.value || 0);
-                          setFact((f) => {
-                            const a = [...f.items];
-                            a[idx] = { ...a[idx], precio: v };
-                            return { ...f, items: a };
-                          });
-                        }}
-                        style={{ width: 120, textAlign: "right" }}
-                      />
-                    </td>
-                    <td data-label="Importe" align="right">
-                      {fmtMoney((it.cantidad || 0) * (it.precio || 0))}
-                    </td>
-                    <td data-label=" " align="center" width={50}>
-                      <button onClick={() => delItem(idx)}>×</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
 
           <div
             style={{
@@ -649,37 +645,35 @@ export default function AppIngenieriaCivil() {
             {/* Facturas */}
             <div>
               <h3>Facturas</h3>
-              <div className="table-wrap">
-                <table className="resptable">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Número</th>
-                      <th>Total</th>
-                      <th>Saldo</th>
-                      <th>Estado</th>
+              <table className="resptbl">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th className="num">Número</th>
+                    <th className="num">Total</th>
+                    <th className="num">Saldo</th>
+                    <th className="hide-sm">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cta.facturas.map((f) => (
+                    <tr key={f.id}>
+                      <td>{ddmmyyyy(f.fecha)}</td>
+                      <td className="num">{f.numero || "-"}</td>
+                      <td className="num">{fmtMoney(f.total)}</td>
+                      <td className="num">{fmtMoney(f.saldo)}</td>
+                      <td className="hide-sm">{f.estado}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {cta.facturas.map((f) => (
-                      <tr key={f.id}>
-                        <td data-label="Fecha">{ddmmyyyy(f.fecha)}</td>
-                        <td data-label="Número">{f.numero || "-"}</td>
-                        <td data-label="Total">{fmtMoney(f.total)}</td>
-                        <td data-label="Saldo">{fmtMoney(f.saldo)}</td>
-                        <td data-label="Estado">{f.estado}</td>
-                      </tr>
-                    ))}
-                    {cta.facturas.length === 0 && (
-                      <tr>
-                        <td data-label="-" colSpan={5} align="center" style={{ color: "#666" }}>
-                          Sin facturas…
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                  {cta.facturas.length === 0 && (
+                    <tr>
+                      <td colSpan={5} align="center" style={{ color: "#666" }}>
+                        Sin facturas…
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
 
               <div style={{ marginTop: 10 }}>
                 <b>Totales:</b> Facturado {fmtMoney(cta.totales.facturado)} — Cobrado{" "}
@@ -691,35 +685,33 @@ export default function AppIngenieriaCivil() {
             {/* Recibos y Cobro */}
             <div>
               <h3>Recibos</h3>
-              <div className="table-wrap">
-                <table className="resptable">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Número</th>
-                      <th>Medio</th>
-                      <th>Aplicado</th>
+              <table className="resptbl">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th className="num">Número</th>
+                    <th className="hide-sm">Medio</th>
+                    <th className="num">Aplicado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cta.recibos.map((r) => (
+                    <tr key={r.id}>
+                      <td>{ddmmyyyy(r.fecha)}</td>
+                      <td className="num">{r.numero}</td>
+                      <td className="hide-sm">{r.medio}</td>
+                      <td className="num">{fmtMoney(r.aplicadoAlCliente)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {cta.recibos.map((r) => (
-                      <tr key={r.id}>
-                        <td data-label="Fecha">{ddmmyyyy(r.fecha)}</td>
-                        <td data-label="Número">{r.numero}</td>
-                        <td data-label="Medio">{r.medio}</td>
-                        <td data-label="Aplicado">{fmtMoney(r.aplicadoAlCliente)}</td>
-                      </tr>
-                    ))}
-                    {cta.recibos.length === 0 && (
-                      <tr>
-                        <td data-label="-" colSpan={4} align="center" style={{ color: "#666" }}>
-                          Sin cobros…
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                  {cta.recibos.length === 0 && (
+                    <tr>
+                      <td colSpan={4} align="center" style={{ color: "#666" }}>
+                        Sin cobros…
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
 
               <div style={{ marginTop: 16, borderTop: "1px solid #eee", paddingTop: 12 }}>
                 <h3>Registrar cobro</h3>
@@ -754,46 +746,44 @@ export default function AppIngenieriaCivil() {
 
                 <div style={{ marginTop: 10 }}>
                   <b>Aplicar a facturas</b>
-                  <div className="table-wrap">
-                    <table className="resptable">
-                      <thead>
-                        <tr>
-                          <th>Número</th>
-                          <th>Saldo</th>
-                          <th>Aplicar</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cta.facturas
-                          .filter((f) => Number(f.saldo || 0) > 0)
-                          .map((f) => (
-                            <tr key={f.id}>
-                              <td data-label="Número">{f.numero || f.id}</td>
-                              <td data-label="Saldo">{fmtMoney(f.saldo)}</td>
-                              <td data-label="Aplicar">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={rc.aplica?.[f.id] ?? 0}
-                                  onChange={(e) =>
-                                    setAplicado(f.id, e.target.value, f.saldo)
-                                  }
-                                  style={{ width: 120, textAlign: "right" }}
-                                />
-                              </td>
-                            </tr>
-                          ))}
-                        {cta.facturas.filter((f) => Number(f.saldo || 0) > 0).length === 0 && (
-                          <tr>
-                            <td data-label="-" colSpan={3} align="center" style={{ color: "#666" }}>
-                              No hay facturas abiertas.
+                  <table className="resptbl">
+                    <thead>
+                      <tr>
+                        <th>Número</th>
+                        <th className="num">Saldo</th>
+                        <th className="num">Aplicar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cta.facturas
+                        .filter((f) => Number(f.saldo || 0) > 0)
+                        .map((f) => (
+                          <tr key={f.id}>
+                            <td>{f.numero || f.id}</td>
+                            <td className="num">{fmtMoney(f.saldo)}</td>
+                            <td className="num">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={rc.aplica?.[f.id] ?? 0}
+                                onChange={(e) =>
+                                  setAplicado(f.id, e.target.value, f.saldo)
+                                }
+                                style={{ width: 120, textAlign: "right" }}
+                              />
                             </td>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        ))}
+                      {cta.facturas.filter((f) => Number(f.saldo || 0) > 0).length === 0 && (
+                        <tr>
+                          <td colSpan={3} align="center" style={{ color: "#666" }}>
+                            No hay facturas abiertas.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
 
                   <div style={{ textAlign: "right", marginTop: 8 }}>
                     Total a cobrar: <b>{fmtMoney(totalAplicado)}</b>
@@ -813,3 +803,4 @@ export default function AppIngenieriaCivil() {
     </div>
   );
 }
+
