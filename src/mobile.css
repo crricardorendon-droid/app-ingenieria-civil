@@ -1,130 +1,59 @@
-/* —————————————————— */
-/* Base (opcional bonito) */
-:root {
-  --bg: #f7f8fa;
-  --card: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --primary: #111827;
-}
+/* ====== Reset suave ====== */
+* { box-sizing: border-box; }
 
-html, body {
-  background: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* Botonera más compacta en móvil */
+button { line-height: 1.15; }
 
-/* Contenedor de tabla (en desktop no cambia nada) */
-.table-wrap {
+/* ====== Tablas “clásicas” sin scroll horizontal ====== */
+.resptbl {
   width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;         /* Fuerza que las celdas se achiquen y salten de línea */
 }
 
-/* Tabla normal (desktop) */
-.resptable {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.resptable th,
-.resptable td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
-}
-
-.resptable th {
+.resptbl th,
+.resptbl td {
+  padding: 10px 8px;
+  border-top: 1px solid #eee;
   text-align: left;
-  font-weight: 700;
-  color: var(--muted);
-  background: #fafafa;
+  vertical-align: top;
+  word-break: break-word;      /* Rompe palabras largas */
+  white-space: normal;         /* Permite salto de línea */
 }
 
-.resptable tr:last-child td {
-  border-bottom: none;
+.resptbl thead th {
+  background: #f6f6f6;
+  font-weight: 600;
 }
 
-/* —————————————————— */
-/* MODO MÓVIL: la tabla se convierte en tarjetas */
+/* Celdas “angostas”: números/importe */
+.resptbl td.num,
+.resptbl th.num {
+  width: 100px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Acciones en fila que se envuelven */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ====== Ajustes en pantallas chicas ====== */
 @media (max-width: 768px) {
-  /* Ocultamos cabecera y “convertimos” todo en bloques */
-  .resptable,
-  .resptable thead,
-  .resptable tbody,
-  .resptable th,
-  .resptable td,
-  .resptable tr {
-    display: block;
+  .resptbl th, .resptbl td { 
+    padding: 10px 6px; 
+    font-size: 14px; 
   }
 
-  .resptable thead {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-  }
+  /* Quita márgenes excesivos alrededor del layout (opcional) */
+  body { margin: 0; }
 
-  /* Cada fila se vuelve “card” */
-  .resptable tr {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    margin: 12px 0;
-    padding: 10px 12px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.04);
-  }
+  /* Oculta columnas poco críticas en móvil (usa .hide-sm en el JSX) */
+  .hide-sm { display: none; }
 
-  /* Cada celda: “Etiqueta: valor” */
-  .resptable td {
-    border: none;
-    border-bottom: 1px dashed var(--line);
-    display: flex;
-    gap: 10px;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 10px 4px;
-  }
-
-  /* Última celda sin línea */
-  .resptable td:last-child {
-    border-bottom: none;
-    padding-bottom: 4px;
-  }
-
-  /* Etiqueta (viene del data-label) */
-  .resptable td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--muted);
-    flex: 1 1 auto;
-    padding-right: 10px;
-  }
-
-  /* Valor a la derecha */
-  .resptable td > * {
-    text-align: right;
-    flex: 0 0 auto;
-  }
-
-  /* Botoneras/acciones dentro de la card */
-  .resptable td.actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
-
-  /* Inputs/Selects dentro de tablas se ven mejor */
-  .resptable td input,
-  .resptable td select,
-  .resptable td button {
-    font-size: 16px;          /* evita zoom en iOS */
-    padding: 10px 12px;
-    border-radius: 10px;
-  }
+  /* Columnas numéricas un poco más angostas */
+  .resptbl td.num, .resptbl th.num { width: 84px; }
 }
-
